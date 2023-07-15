@@ -4,82 +4,97 @@ import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "dat.gui";
 
 const scene = new THREE.Scene();
+scene.add(new THREE.AxesHelper(5));
 
 const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
   0.1,
-  100
+  1000
 );
-camera.position.set(0, 0.75, 1.5);
+camera.position.z = 3;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+new OrbitControls(camera, renderer.domElement);
 
-function twist(geometry: THREE.BufferGeometry, factor: number) {
-  const q = new THREE.Quaternion();
-  const up = new THREE.Vector3(0, 1, 0);
-  const p = (geometry.attributes.position as THREE.BufferAttribute)
-    .array as number[];
+const boxGeometry = new THREE.BoxGeometry();
+const sphereGeometry = new THREE.SphereGeometry();
+const icosahedronGeometry = new THREE.IcosahedronGeometry(1, 0);
+const planeGeometry = new THREE.PlaneGeometry();
+const torusKnotGeometry = new THREE.TorusKnotGeometry();
 
-  for (let i = 0; i < p.length; i += 3) {
-    q.setFromAxisAngle(up, p[i + 1] * factor);
+const material = new THREE.MeshBasicMaterial();
+//const material= new THREE.MeshNormalMaterial()
 
-    let vec = new THREE.Vector3(p[i], p[i + 1], p[i + 2]);
-    vec.applyQuaternion(q);
+const cube = new THREE.Mesh(boxGeometry, material);
+cube.position.x = 5;
+scene.add(cube);
 
-    p[i] = vec.x;
-    p[i + 2] = vec.z;
-  }
+const sphere = new THREE.Mesh(sphereGeometry, material);
+sphere.position.x = 3;
+scene.add(sphere);
 
-  geometry.computeVertexNormals();
-  geometry.attributes.position.needsUpdate = true;
+const icosahedron = new THREE.Mesh(icosahedronGeometry, material);
+icosahedron.position.x = 0;
+scene.add(icosahedron);
+
+const plane = new THREE.Mesh(planeGeometry, material);
+plane.position.x = -2;
+scene.add(plane);
+
+const torusKnot = new THREE.Mesh(torusKnotGeometry, material);
+torusKnot.position.x = -5;
+scene.add(torusKnot);
+
+window.addEventListener("resize", onWindowResize, false);
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  render();
 }
-
-let geometry = new THREE.BoxGeometry(1, 1, 1, 10, 10, 10);
-twist(geometry, Math.PI / 2);
-const twistedCube = new THREE.Mesh(
-  geometry,
-  new THREE.MeshNormalMaterial({
-    wireframe: true,
-  })
-);
-scene.add(twistedCube);
-
-window.addEventListener(
-  "resize",
-  () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  },
-  false
-);
-
-let data = {
-  t: Math.PI / 2,
-};
-
-const gui = new GUI();
-gui.add(data, "t", -Math.PI, Math.PI, 0.01).onChange((t) => {
-  twistedCube.geometry.dispose();
-  geometry = new THREE.BoxGeometry(1, 1, 1, 10, 10, 10);
-  twist(geometry, t);
-  twistedCube.geometry = geometry;
-});
-gui.open();
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
 
+const options = {
+  side: {
+    FrontSide: THREE.FrontSide,
+    BackSide: THREE.BackSide,
+    DoubleSide: THREE.DoubleSide,
+  },
+};
+
+const gui = new GUI();
+const materialFolder = gui.addFolder("THREE.Material");
+materialFolder
+  .add(material, "transparent")
+  .onChange(() => (material.needsUpdate = true));
+materialFolder.add(material, "opacity", 0, 1, 0.01);
+materialFolder.add(material, "depthTest");
+materialFolder.add(material, "depthWrite");
+materialFolder
+  .add(material, "alphaTest", 0, 1, 0.01)
+  .onChange(() => updateMaterial());
+materialFolder.add(material, "visible");
+materialFolder
+  .add(material, "side", options.side)
+  .onChange(() => updateMaterial());
+materialFolder.open();
+
+function updateMaterial() {
+  material.side = Number(material.side) as THREE.Side;
+  material.needsUpdate = true;
+}
+
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
+
   render();
+
   stats.update();
 }
 
