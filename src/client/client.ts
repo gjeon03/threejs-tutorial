@@ -22,10 +22,14 @@ scene.add(light);
 
 // Create a world
 const world = new CANNON.World();
-world.gravity.set(0, -9.82, 0); // m/s²
+// 중력을 달의 중심에서 발생하도록 설정 (달의 위치를 기준으로 중력 설정)
+// world.gravity.set(0, -9.82, 0);
+world.gravity.set(0, 0, 0);
+
+
 
 // Create a moon geometry and material (assuming the moon's radius is similar to the sphere)
-const moonGeometry = new THREE.SphereGeometry(3, 32, 32);
+const moonGeometry = new THREE.SphereGeometry(4, 32, 32);
 const moonTexture = new THREE.TextureLoader().load("img/moon_map.jpg"); // 달 이미지 로드
 const moonMaterial = new THREE.MeshLambertMaterial({ map: moonTexture });
 
@@ -34,14 +38,14 @@ const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
 scene.add(moonMesh);
 
 // Create a moon shape and body
-const moonShape = new CANNON.Sphere(3); // radius (adjust it according to your moon size)
+const moonShape = new CANNON.Sphere(4); // radius (adjust it according to your moon size)
 const moonBody = new CANNON.Body({ mass: 0 }); // Set mass to 0 for a static moon
 moonBody.addShape(moonShape);
 moonBody.position.set(0, 0, 0); // m (adjust it according to the desired moon position)
 world.addBody(moonBody);
 
 // Create a sphere geometry and material for the player's unit (red ball)
-const unitGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+const unitGeometry = new THREE.SphereGeometry(0.3, 8, 8);
 const unitMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 }); // Red color
 
 // Create the player's unit (red ball) and add it to the scene
@@ -49,7 +53,7 @@ const unitMesh = new THREE.Mesh(unitGeometry, unitMaterial);
 scene.add(unitMesh);
 
 // Create a unit shape and body
-const unitShape = new CANNON.Sphere(0.5); // radius
+const unitShape = new CANNON.Sphere(0.3); // radius
 const unitBody = new CANNON.Body({ mass: 1 }); // kg
 unitBody.addShape(unitShape);
 unitBody.position.set(0, 5, 0); // m (adjust it according to the starting position)
@@ -137,6 +141,20 @@ function animate() {
     // Render the scene
     renderer.render(scene, camera);
 }
+
+// 빨간공과 달 간의 스프링 연결 설정
+const spring = new CANNON.Spring(unitBody, moonBody, {
+    restLength: 0, // 초기 길이 (0으로 설정하여 빨간공과 달이 붙어있는 상태)
+    stiffness: 1, // 스프링 강도 (원하는 값으로 조정)
+    damping: 0.1, // 댐핑 (원하는 값으로 조정)
+    localAnchorA: new CANNON.Vec3(0, 0, 0), // 빨간공의 중심
+    localAnchorB: new CANNON.Vec3(0, 0, 0), // 달의 중심
+});
+
+// 스프링을 물리 엔진에 직접 추가
+world.addEventListener("postStep", () => {
+    spring.applyForce(); // 스프링에 의한 힘을 적용
+});
 
 // Start the animation loop
 animate();
