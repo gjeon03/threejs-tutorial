@@ -22,11 +22,9 @@ scene.add(light);
 
 // Create a world
 const world = new CANNON.World();
-// 중력을 달의 중심에서 발생하도록 설정 (달의 위치를 기준으로 중력 설정)
+// 중력을 달의 중심으로 이동하도록 설정 (달의 위치를 기준으로 중력 설정)
 // world.gravity.set(0, -9.82, 0);
 world.gravity.set(0, 0, 0);
-
-
 
 // Create a moon geometry and material (assuming the moon's radius is similar to the sphere)
 const moonGeometry = new THREE.SphereGeometry(4, 32, 32);
@@ -61,7 +59,7 @@ world.addBody(unitBody);
 
 // Create an orbit control for the camera
 const orbitControl = new OrbitControls(camera, renderer.domElement);
-orbitControl.target.copy(unitMesh.position); // make the camera look at the unit
+// orbitControl.target.copy(unitMesh.position); // Remove this line
 
 // Define the time step for the physics simulation
 const fixedTimeStep = 1.0 / 60.0; // seconds
@@ -135,8 +133,11 @@ function animate() {
     // Copy the position from the unit body to the unit mesh
     unitMesh.position.copy(new THREE.Vector3(unitBody.position.x, unitBody.position.y, unitBody.position.z));
 
-    // Update the orbit control
-    orbitControl.update();
+    // Update the camera position to follow the unit
+    const cameraOffset = new THREE.Vector3(0, 5, 10);
+    const cameraPosition = unitMesh.position.clone().add(cameraOffset);
+    camera.position.copy(cameraPosition);
+    camera.lookAt(unitMesh.position);
 
     // Render the scene
     renderer.render(scene, camera);
